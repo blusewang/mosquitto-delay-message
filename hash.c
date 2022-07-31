@@ -2,12 +2,11 @@
 // Created by bluse on 2022/7/31.
 //
 
-#include <mosquitto_broker.h>
 #include <mosquitto.h>
 #include "hash.h"
 #include "uthash.h"
 
-void set(const char *key, struct delay_message msg) {
+void set(const char *key, struct delay_message *msg) {
     if (key == NULL) {
         return;
     }
@@ -15,12 +14,12 @@ void set(const char *key, struct delay_message msg) {
     HASH_FIND_STR(pData, key, r);
     if (r == NULL) {
         r = malloc(sizeof(struct dataItem));
-        strcpy(r->key, key);
-        r->d_msg = msg;
+        r->key = key;
+        r->d_msg = *msg;
 
         HASH_ADD_STR(pData, key, r);
     } else {
-        r->d_msg = msg;
+        r->d_msg = *msg;
     }
 }
 
@@ -45,6 +44,8 @@ void del(const char *key) {
     HASH_FIND_STR(pData, key, r);
     if (r != NULL) {
         HASH_DEL(pData, r);
+        free(r->d_msg.topic);
+        free(r->d_msg.payload);
         free(r);
     }
 }

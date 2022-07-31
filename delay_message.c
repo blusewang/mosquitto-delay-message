@@ -17,7 +17,7 @@ int cb_message(int event, void *event_data, void *userdata) {
     struct mosquitto_evt_message *msg = event_data;
 
     // 先把msg.topic数据换出来
-    char *topic = malloc(strlen(msg->topic));
+    char *topic = malloc(strlen(msg->topic) + 1);
     strcpy(topic, msg->topic);
 
     // split topic
@@ -27,6 +27,7 @@ int cb_message(int event, void *event_data, void *userdata) {
         // 读出延迟秒数
         topicSegment = strtok(NULL, "/");
         if (topicSegment == NULL) {
+            free(topic);
             return MOSQ_ERR_SUCCESS;
         }
 
@@ -34,14 +35,16 @@ int cb_message(int event, void *event_data, void *userdata) {
 
         // 筛选符合条件的延迟消息
         if (delay > max_delay || delay < 1) {
+            free(topic);
             return MOSQ_ERR_SUCCESS;
         }
 
         // 开始构建延迟消息
         struct delay_message dm = {};
-        dm.topic = malloc(sizeof(msg->topic));
-        dm.payload = calloc(1, msg->payloadlen + 1);
-        memcpy(dm.payload, msg->payload, (size_t) msg->payloadlen);
+        dm.topic = malloc(strlen(msg->topic) + 1);
+        dm.payload_len = msg->payloadlen;
+        dm.payload = malloc(msg->payloadlen + 1);
+        memcpy(dm.payload, msg->payload, msg->payloadlen);
         dm.qos = msg->qos;
 
         time_t ts;
@@ -57,11 +60,11 @@ int cb_message(int event, void *event_data, void *userdata) {
             }
         }
 
-        set(ctime(&ts), dm);
+        set(ctime(&ts), &dm);
 
-//        mosquitto_log_printf(MOSQ_LOG_NOTICE, ">>>>> topic delay: %ld, %s, %d", delay, msg->topic, msg->payloadlen);
+//        mosquitto_log_printf(MOSQ_LOG_NOTICE, ">>>>> topic delay: %ld, %s, %s", delay, dm.topic, dm.payload);
     }
-
+    free(topic);
     return MOSQ_ERR_SUCCESS;
 }
 
@@ -74,8 +77,8 @@ int cb_tick(int event, void *event_data, void *userdata) {
     char *cts = ctime(&ts);
     struct delay_message *msg = get(cts);
     if (msg != NULL) {
-        mosquitto_broker_publish(NULL, msg->topic, (int) strlen(msg->payload), msg->payload, msg->qos, false, NULL);
 //        mosquitto_log_printf(MOSQ_LOG_NOTICE, "cb_tick got msg:%s", msg->topic);
+        mosquitto_broker_publish_copy(NULL, msg->topic, (int) strlen(msg->payload) + 1, msg->payload, msg->qos, false, NULL);
         del(ctime(&ts));
     }
 
