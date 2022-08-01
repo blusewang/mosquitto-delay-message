@@ -75,10 +75,13 @@ int cb_tick(int event, void *event_data, void *userdata) {
     time_t ts;
     time(&ts);
     char *cts = ctime(&ts);
-    struct delay_message *msg = get(cts);
-    if (msg != NULL) {
-//        mosquitto_log_printf(MOSQ_LOG_NOTICE, "cb_tick got msg:%s", msg->topic);
-        mosquitto_broker_publish_copy(NULL, msg->topic, (int) strlen(msg->payload) + 1, msg->payload, msg->qos, false, NULL);
+    struct delay_message_array arr = get(cts);
+    if (arr.length > 0) {
+//        mosquitto_log_printf(MOSQ_LOG_NOTICE, "cb_tick got len:%d, msg:%s", arr.length, arr.arr[0].topic);
+        for (int i = 0; i < arr.length; ++i) {
+            mosquitto_broker_publish_copy(NULL, arr.arr[i].topic, (int) strlen(arr.arr[i].payload) + 1, arr.arr[i].payload, arr.arr[i].qos, false, NULL);
+        }
+
         del(ctime(&ts));
     }
 

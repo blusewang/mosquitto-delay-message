@@ -14,15 +14,21 @@ struct delay_message {
     int qos;
 };
 
+struct delay_message_array {
+    struct delay_message *arr;
+    int length;
+};
+
 static struct dataItem {
     const char *key;        // key
-    struct delay_message d_msg;
+    struct delay_message *arr;
+    int count;
     UT_hash_handle hh;
 } *pData = NULL;
 
 void set(const char *key, struct delay_message *msg);
 
-struct delay_message *get(const char *key);
+struct delay_message_array get(const char *key);
 
 void del(const char *key);
 

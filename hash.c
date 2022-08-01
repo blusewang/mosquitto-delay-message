@@ -15,24 +15,34 @@ void set(const char *key, struct delay_message *msg) {
     if (r == NULL) {
         r = malloc(sizeof(struct dataItem));
         r->key = key;
-        r->d_msg = *msg;
+        r->arr = malloc(sizeof (struct delay_message));
+        r->arr[0] = *msg;
+        r->count = 1;
 
         HASH_ADD_STR(pData, key, r);
     } else {
-        r->d_msg = *msg;
+        r->count += 1;
+        struct delay_message *arr = malloc(r->count * sizeof (struct delay_message));
+        for (int i = 0; i < r->count; ++i) {
+            if (i < r->count-1) arr[i] = r->arr[i];
+            else arr[i] = *msg;
+        }
+        free(r->arr);
+        r->arr = arr;
     }
 }
 
-struct delay_message *get(const char *key) {
+struct delay_message_array get(const char *key) {
     if (key == NULL) {
-        return NULL;
+        return (struct delay_message_array) {NULL, 0};
     }
     struct dataItem *i;
     HASH_FIND_STR(pData, key, i);
     if (i == NULL) {
-        return NULL;
+        return (struct delay_message_array) {NULL, 0};
     }
-    return &i->d_msg;
+    struct delay_message_array arr = {i->arr,i->count};
+    return arr;
 }
 
 void del(const char *key) {
@@ -43,9 +53,13 @@ void del(const char *key) {
     struct dataItem *r;
     HASH_FIND_STR(pData, key, r);
     if (r != NULL) {
-        HASH_DEL(pData, r);
-        free(r->d_msg.topic);
-        free(r->d_msg.payload);
+        // 完整清理
+        for (int i = 0; i < r->count; ++i) {
+            free(r->arr[i].topic);
+            free(r->arr[i].payload);
+        }
+        free(r->arr);
         free(r);
+        HASH_DEL(pData, r);
     }
 }
