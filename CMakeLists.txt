@@ -15,7 +15,7 @@ if(APPLE)
     set(CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS "${CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS} -undefined dynamic_lookup")
 endif(APPLE)
 
-add_library(delay_message SHARED delay_message.c delay_message.h uthash.h plugin.c hash.c hash.h)
+add_library(delay_message SHARED handler.c handler.h uthash.h plugin.c hash.c hash.h)
 
 #target_link_libraries(gdb pq cjson)
 

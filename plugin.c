@@ -7,7 +7,7 @@
 #include <mosquitto_broker.h>
 #include <mosquitto_plugin.h>
 #include <stdlib.h>
-#include "delay_message.h"
+#include "handler.h"
 
 int max_delay = 60;
 static mosquitto_plugin_id_t *mos_pid = NULL;

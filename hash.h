@@ -26,7 +26,7 @@ static struct dataItem {
     UT_hash_handle hh;
 } *pData = NULL;
 
-void set(const char *key, struct delay_message *msg);
+void set(const char *key, struct delay_message msg);
 
 struct delay_message_array get(const char *key);
 

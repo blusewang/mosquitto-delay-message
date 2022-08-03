@@ -8,7 +8,7 @@
 #include <mosquitto.h>
 #include <mosquitto_broker.h>
 #include <mosquitto_plugin.h>
-#include "delay_message.h"
+#include "handler.h"
 #include "hash.h"
 
 int cb_message(int event, void *event_data, void *userdata) {
@@ -42,8 +42,9 @@ int cb_message(int event, void *event_data, void *userdata) {
         // 开始构建延迟消息
         struct delay_message dm = {};
         dm.topic = malloc(strlen(msg->topic) + 1);
+        dm.topic[0] = '\0';
         dm.payload_len = msg->payloadlen;
-        dm.payload = malloc(msg->payloadlen + 1);
+        dm.payload = calloc(1, (size_t)(msg->payloadlen));
         memcpy(dm.payload, msg->payload, msg->payloadlen);
         dm.qos = msg->qos;
 
@@ -60,13 +61,15 @@ int cb_message(int event, void *event_data, void *userdata) {
             }
         }
 
-        set(ctime(&ts), &dm);
+        set(ctime(&ts), dm);
 
-//        mosquitto_log_printf(MOSQ_LOG_NOTICE, ">>>>> topic delay: %ld, %s, %s", delay, dm.topic, dm.payload);
+//        mosquitto_log_printf(MOSQ_LOG_NOTICE, ">>>>> cache in topic delay: %ld, %s, %s", delay, dm.topic, msg->payload);
     }
     free(topic);
     return MOSQ_ERR_SUCCESS;
 }
+
+time_t tts;
 
 int cb_tick(int event, void *event_data, void *userdata) {
     UNUSED(event);
@@ -74,15 +77,21 @@ int cb_tick(int event, void *event_data, void *userdata) {
     UNUSED(userdata);
     time_t ts;
     time(&ts);
-    char *cts = ctime(&ts);
-    struct delay_message_array arr = get(cts);
-    if (arr.length > 0) {
-//        mosquitto_log_printf(MOSQ_LOG_NOTICE, "cb_tick got len:%d, msg:%s", arr.length, arr.arr[0].topic);
-        for (int i = 0; i < arr.length; ++i) {
-            mosquitto_broker_publish_copy(NULL, arr.arr[i].topic, (int) strlen(arr.arr[i].payload) + 1, arr.arr[i].payload, arr.arr[i].qos, false, NULL);
-        }
+    if (tts != ts) {
+        tts = ts;
+        char *cts = ctime(&ts);
+        struct delay_message_array arr = get(cts);
+        if (arr.length > 0) {
+//            mosquitto_log_printf(MOSQ_LOG_NOTICE, "cb_tick got topic:%s, len:%d, msg:%s", arr.arr[0].topic,
+//                                 strlen(arr.arr[0].topic),
+//                                 arr.arr[0].payload);
+            for (int i = 0; i < arr.length; ++i) {
+                mosquitto_broker_publish_copy(NULL, arr.arr[i].topic, (int) strlen(arr.arr[i].payload) + 1,
+                                              arr.arr[i].payload, arr.arr[i].qos, false, NULL);
+            }
 
-        del(ctime(&ts));
+            del(ctime(&ts));
+        }
     }
 
     return MOSQ_ERR_SUCCESS;
