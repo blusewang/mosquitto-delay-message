@@ -10,7 +10,7 @@
 struct delay_message {
     char *topic;
     void *payload;
-    uint32_t payload_len;
+    int payload_len;
     int qos;
 };
 

@@ -19,18 +19,18 @@ int handle_delay_message(int event, void *event_data, void *userdata) {
     char *origin_topic = mosquitto_malloc(strlen(msg->topic) + 1);
     strcpy(origin_topic, msg->topic);
 
-    // split origin_topic
-    char *topicSegment = strtok(origin_topic, "/");
-    // 判断是否为延迟消息
-    if (strcmp(topicSegment, "delay") == 0) {
+    // 话题解码
+    char *topic_segment = strtok(origin_topic, "/");
+    // 判断是否为需要延迟消息
+    if (strcmp(topic_segment, "delay") == 0) {
         // 读出延迟秒数
-        topicSegment = strtok(NULL, "/");
-        if (topicSegment == NULL) {
+        topic_segment = strtok(NULL, "/");
+        if (topic_segment == NULL) {
             mosquitto_free(origin_topic);
             return MOSQ_ERR_SUCCESS;
         }
 
-        long delay = atoi(topicSegment);
+        long delay = atoi(topic_segment);
 
         // 筛选符合条件的延迟消息
         if (delay > max_delay || delay < 1) {
@@ -42,7 +42,7 @@ int handle_delay_message(int event, void *event_data, void *userdata) {
         struct delay_message dm = {};
         dm.topic = mosquitto_malloc(strlen(msg->topic) + 1);
         dm.topic[0] = '\0';
-        dm.payload_len = msg->payloadlen;
+        dm.payload_len = (int) msg->payloadlen;
         dm.payload = mosquitto_calloc(1, (size_t) (msg->payloadlen));
         memcpy(dm.payload, msg->payload, msg->payloadlen);
         dm.qos = msg->qos;
@@ -51,11 +51,11 @@ int handle_delay_message(int event, void *event_data, void *userdata) {
         time(&ts);
         ts += delay;
 
-        topicSegment = strtok(NULL, "/");
-        while (topicSegment != NULL) {
-            strcat(dm.topic, topicSegment);
-            topicSegment = strtok(NULL, "/");
-            if (topicSegment != NULL) {
+        topic_segment = strtok(NULL, "/");
+        while (topic_segment != NULL) {
+            strcat(dm.topic, topic_segment);
+            topic_segment = strtok(NULL, "/");
+            if (topic_segment != NULL) {
                 strcat(dm.topic, "/");
             }
         }
@@ -85,7 +85,7 @@ int handle_delay_message_tick(int event, void *event_data, void *userdata) {
             mosquitto_log_printf(MOSQ_LOG_NOTICE, "handle_delay_message_tick got topic:%s, len:%d, msg:%s",
                                  arr.arr[0].topic, strlen(arr.arr[0].topic), arr.arr[0].payload);
             for (int i = 0; i < arr.length; ++i) {
-                mosquitto_broker_publish_copy(NULL, arr.arr[i].topic, (int) strlen(arr.arr[i].payload) + 1,
+                mosquitto_broker_publish_copy(NULL, arr.arr[i].topic, arr.arr[i].payload_len,
                                               arr.arr[i].payload, arr.arr[i].qos, false, NULL);
             }
 

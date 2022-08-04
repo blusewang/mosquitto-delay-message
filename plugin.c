@@ -25,6 +25,7 @@ int mosquitto_plugin_version(int supported_version_count, const int *supported_v
 
 int
 mosquitto_plugin_init(mosquitto_plugin_id_t *identifier, void **user_data, struct mosquitto_opt *opts, int opt_count) {
+    UNUSED(user_data);
     for (int i = 0; i < opt_count; ++i) {
         mosquitto_log_printf(MOSQ_LOG_DEBUG, "%s -> %s %d", opts->key, opts->value, strcmp(opts->key, "max_delay"));
         if (strcmp(opts->key, "max_delay") == 0) {
@@ -53,10 +54,13 @@ mosquitto_plugin_init(mosquitto_plugin_id_t *identifier, void **user_data, struc
 
 
 int mosquitto_plugin_cleanup(void *user_data, struct mosquitto_opt *opts, int opt_count) {
+    UNUSED(user_data);
+    UNUSED(opts);
+    UNUSED(opt_count);
     if (mos_pid) {
         int rs = mosquitto_callback_unregister(mos_pid, MOSQ_EVT_TICK, handle_delay_message_tick, NULL);
         if (rs != MOSQ_ERR_SUCCESS) {
-            mosquitto_log_printf(MOSQ_LOG_ERR, "mosquitto_callback_unregister MOSQ_EVT_MESSAGE err:%d", rs);
+            mosquitto_log_printf(MOSQ_LOG_ERR, "mosquitto_callback_unregister MOSQ_EVT_TICK err:%d", rs);
             return rs;
         }
         rs = mosquitto_callback_unregister(mos_pid, MOSQ_EVT_MESSAGE, handle_delay_message, NULL);
