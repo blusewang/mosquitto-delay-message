@@ -4,7 +4,6 @@
 
 #include <time.h>
 #include <string.h>
-#include <stdlib.h>
 #include <mosquitto.h>
 #include <mosquitto_broker.h>
 #include <mosquitto_plugin.h>
@@ -17,17 +16,17 @@ int handle_delay_message(int event, void *event_data, void *userdata) {
     struct mosquitto_evt_message *msg = event_data;
 
     // 先把msg.topic数据换出来
-    char *topic = malloc(strlen(msg->topic) + 1);
-    strcpy(topic, msg->topic);
+    char *origin_topic = mosquitto_malloc(strlen(msg->topic) + 1);
+    strcpy(origin_topic, msg->topic);
 
-    // split topic
-    char *topicSegment = strtok(topic, "/");
+    // split origin_topic
+    char *topicSegment = strtok(origin_topic, "/");
     // 判断是否为延迟消息
     if (strcmp(topicSegment, "delay") == 0) {
         // 读出延迟秒数
         topicSegment = strtok(NULL, "/");
         if (topicSegment == NULL) {
-            free(topic);
+            mosquitto_free(origin_topic);
             return MOSQ_ERR_SUCCESS;
         }
 
@@ -35,16 +34,16 @@ int handle_delay_message(int event, void *event_data, void *userdata) {
 
         // 筛选符合条件的延迟消息
         if (delay > max_delay || delay < 1) {
-            free(topic);
+            mosquitto_free(origin_topic);
             return MOSQ_ERR_SUCCESS;
         }
 
         // 开始构建延迟消息
         struct delay_message dm = {};
-        dm.topic = malloc(strlen(msg->topic) + 1);
+        dm.topic = mosquitto_malloc(strlen(msg->topic) + 1);
         dm.topic[0] = '\0';
         dm.payload_len = msg->payloadlen;
-        dm.payload = calloc(1, (size_t)(msg->payloadlen));
+        dm.payload = mosquitto_calloc(1, (size_t) (msg->payloadlen));
         memcpy(dm.payload, msg->payload, msg->payloadlen);
         dm.qos = msg->qos;
 
@@ -63,9 +62,9 @@ int handle_delay_message(int event, void *event_data, void *userdata) {
 
         set(ctime(&ts), dm);
 
-//        mosquitto_log_printf(MOSQ_LOG_NOTICE, ">>>>> cache in topic delay: %ld, %s, %s", delay, dm.topic, msg->payload);
+//        mosquitto_log_printf(MOSQ_LOG_NOTICE, ">>>>> cache in origin_topic delay: %ld, %s, %s", delay, dm.origin_topic, msg->payload);
     }
-    free(topic);
+    mosquitto_free(origin_topic);
     return MOSQ_ERR_SUCCESS;
 }
 

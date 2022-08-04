@@ -3,6 +3,7 @@
 //
 
 #include <mosquitto.h>
+#include <mosquitto_broker.h>
 #include "hash.h"
 #include "uthash.h"
 
@@ -13,16 +14,16 @@ void set(const char *key, struct delay_message msg) {
     struct dataItem *r;
     HASH_FIND_STR(pData, key, r);
     if (r == NULL) {
-        r = malloc(sizeof(struct dataItem));
+        r = mosquitto_malloc(sizeof(struct dataItem));
         r->key = key;
-        r->arr = malloc(sizeof(struct delay_message));
+        r->arr = mosquitto_malloc(sizeof(struct delay_message));
         r->arr[0] = msg;
         r->count = 1;
 
         HASH_ADD_STR(pData, key, r);
     } else {
         r->count += 1;
-        struct delay_message *arr = calloc(r->count, sizeof(struct delay_message));
+        struct delay_message *arr = mosquitto_calloc(r->count, sizeof(struct delay_message));
         for (int i = 0; i < r->count; ++i) {
             if (i < r->count - 1) {
                 arr[i] = r->arr[i];
@@ -30,7 +31,7 @@ void set(const char *key, struct delay_message msg) {
                 arr[i] = msg;
             }
         }
-        free(r->arr);
+        mosquitto_free(r->arr);
         r->arr = arr;
     }
 }
@@ -59,12 +60,12 @@ void del(const char *key) {
         HASH_DEL(pData, r);
         // 完整清理
         for (int i = 0; i < r->count; ++i) {
-            free(r->arr[i].topic);
-            free(r->arr[i].payload);
+            mosquitto_free(r->arr[i].topic);
+            mosquitto_free(r->arr[i].payload);
         }
-        free(r->arr);
+        mosquitto_free(r->arr);
         r->arr = NULL;
-        free(r);
+        mosquitto_free(r);
         r = NULL;
     }
 }
