@@ -9,7 +9,7 @@
 
 extern int max_delay;
 
-int handle_delay_messge_tick(int event, void *event_data, void *userdata);
+int handle_delay_message_tick(int event, void *event_data, void *userdata);
 
 int handle_delay_message(int event, void *event_data, void *userdata);
 
