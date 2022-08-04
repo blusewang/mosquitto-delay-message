@@ -11,7 +11,7 @@
 #include "handler.h"
 #include "hash.h"
 
-int cb_message(int event, void *event_data, void *userdata) {
+int handle_delay_message(int event, void *event_data, void *userdata) {
     UNUSED(event);
     UNUSED(userdata);
     struct mosquitto_evt_message *msg = event_data;
@@ -71,7 +71,7 @@ int cb_message(int event, void *event_data, void *userdata) {
 
 time_t tts;
 
-int cb_tick(int event, void *event_data, void *userdata) {
+int handle_delay_messge_tick(int event, void *event_data, void *userdata) {
     UNUSED(event);
     UNUSED(event_data);
     UNUSED(userdata);
@@ -82,7 +82,7 @@ int cb_tick(int event, void *event_data, void *userdata) {
         char *cts = ctime(&ts);
         struct delay_message_array arr = get(cts);
         if (arr.length > 0) {
-//            mosquitto_log_printf(MOSQ_LOG_NOTICE, "cb_tick got topic:%s, len:%d, msg:%s", arr.arr[0].topic,
+//            mosquitto_log_printf(MOSQ_LOG_NOTICE, "handle_delay_messge_tick got topic:%s, len:%d, msg:%s", arr.arr[0].topic,
 //                                 strlen(arr.arr[0].topic),
 //                                 arr.arr[0].payload);
             for (int i = 0; i < arr.length; ++i) {

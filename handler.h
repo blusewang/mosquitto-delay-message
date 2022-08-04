@@ -9,8 +9,8 @@
 
 extern int max_delay;
 
-int cb_tick(int event, void *event_data, void *userdata);
+int handle_delay_messge_tick(int event, void *event_data, void *userdata);
 
-int cb_message(int event, void *event_data, void *userdata);
+int handle_delay_message(int event, void *event_data, void *userdata);
 
 #endif //MOSQUITTO_DELAY_MESSAGE_DELAY_MESSAGE_H

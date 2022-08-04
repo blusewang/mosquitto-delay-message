@@ -29,9 +29,7 @@ mosquitto_plugin_init(mosquitto_plugin_id_t *identifier, void **user_data, struc
         mosquitto_log_printf(MOSQ_LOG_DEBUG, "%s -> %s %d", opts->key, opts->value, strcmp(opts->key, "max_delay"));
         if (strcmp(opts->key, "max_delay") == 0) {
             max_delay = atoi(opts->value);
-            if (max_delay > 600) {
-                return MOSQ_ERR_UNKNOWN;
-            } else if (max_delay < 6) {
+            if (max_delay > 600 || max_delay < 6) {
                 return MOSQ_ERR_UNKNOWN;
             }
             mosquitto_log_printf(MOSQ_LOG_DEBUG, "maxDelay -> %d", max_delay);
@@ -40,17 +38,32 @@ mosquitto_plugin_init(mosquitto_plugin_id_t *identifier, void **user_data, struc
     }
 
     mos_pid = identifier;
-    mosquitto_callback_register(mos_pid, MOSQ_EVT_TICK, cb_tick, NULL, NULL);
-    mosquitto_callback_register(mos_pid, MOSQ_EVT_MESSAGE, cb_message, NULL, NULL);
-
+    int rs = mosquitto_callback_register(mos_pid, MOSQ_EVT_TICK, handle_delay_messge_tick, NULL, NULL);
+    if (rs != MOSQ_ERR_SUCCESS) {
+        mosquitto_log_printf(MOSQ_LOG_ERR, "mosquitto_callback_register MOSQ_EVT_TICK err:%d", rs);
+        return rs;
+    }
+    rs = mosquitto_callback_register(mos_pid, MOSQ_EVT_MESSAGE, handle_delay_message, NULL, NULL);
+    if (rs != MOSQ_ERR_SUCCESS) {
+        mosquitto_log_printf(MOSQ_LOG_ERR, "mosquitto_callback_register MOSQ_EVT_MESSAGE err:%d", rs);
+        return rs;
+    }
     return MOSQ_ERR_SUCCESS;
 }
 
 
 int mosquitto_plugin_cleanup(void *user_data, struct mosquitto_opt *opts, int opt_count) {
     if (mos_pid) {
-        mosquitto_callback_unregister(mos_pid, MOSQ_EVT_TICK, cb_tick, NULL);
-        mosquitto_callback_unregister(mos_pid, MOSQ_EVT_MESSAGE, cb_message, NULL);
+        int rs = mosquitto_callback_unregister(mos_pid, MOSQ_EVT_TICK, handle_delay_messge_tick, NULL);
+        if (rs != MOSQ_ERR_SUCCESS) {
+            mosquitto_log_printf(MOSQ_LOG_ERR, "mosquitto_callback_unregister MOSQ_EVT_MESSAGE err:%d", rs);
+            return rs;
+        }
+        rs = mosquitto_callback_unregister(mos_pid, MOSQ_EVT_MESSAGE, handle_delay_message, NULL);
+        if (rs != MOSQ_ERR_SUCCESS) {
+            mosquitto_log_printf(MOSQ_LOG_ERR, "mosquitto_callback_unregister MOSQ_EVT_MESSAGE err:%d", rs);
+            return rs;
+        }
     }
     return MOSQ_ERR_SUCCESS;
 }
