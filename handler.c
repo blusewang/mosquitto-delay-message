@@ -62,8 +62,8 @@ int handle_delay_message(int event, void *event_data, void *userdata) {
 
         set(ctime(&ts), dm);
 
-        mosquitto_log_printf(MOSQ_LOG_NOTICE, ">>>>> cache in delay: %ld, topic:%s, payload:%s", delay, dm.topic,
-                             msg->payload);
+        mosquitto_log_printf(MOSQ_LOG_NOTICE, ">>>>> cache in delay: %ld, topic:%s, length:%d, payload:%s", delay, dm.topic,
+                             msg->payloadlen, msg->payload);
     }
     mosquitto_free(origin_topic);
     return MOSQ_ERR_SUCCESS;
@@ -82,8 +82,8 @@ int handle_delay_message_tick(int event, void *event_data, void *userdata) {
         char *cts = ctime(&ts);
         struct delay_message_array arr = get(cts);
         if (arr.length > 0) {
-            mosquitto_log_printf(MOSQ_LOG_NOTICE, "handle_delay_message_tick got topic:%s, len:%d, msg:%s",
-                                 arr.arr[0].topic, strlen(arr.arr[0].topic), arr.arr[0].payload);
+            mosquitto_log_printf(MOSQ_LOG_NOTICE, "handle_delay_message_tick got topic:%s, len:%d, payloadLen:%d, msg:%s",
+                                 arr.arr[0].topic, strlen(arr.arr[0].topic), arr.arr[0].payload_len, arr.arr[0].payload);
             for (int i = 0; i < arr.length; ++i) {
                 mosquitto_broker_publish_copy(NULL, arr.arr[i].topic, arr.arr[i].payload_len,
                                               arr.arr[i].payload, arr.arr[i].qos, false, NULL);
